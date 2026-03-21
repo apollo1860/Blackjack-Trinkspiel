@@ -819,15 +819,20 @@
 
       <!-- 🔥 AUFGABE AUF RÜCKSEITE -->
       <div class="card-face card-back">
-        <div style="
-          padding:10px;
-          font-size:14px;
-          text-align:center;
-          line-height:1.2;
-          font-weight:bold;
-        ">
-          ${card.task}
-        </div>
+  <div style="
+    padding:8px;
+    font-size:11px;              /* 👈 kleiner */
+    text-align:center;
+    line-height:1.3;
+    font-weight:bold;
+
+    display:flex;                /* 👇 sorgt für perfekte Zentrierung */
+    align-items:center;
+    justify-content:center;
+    height:100%;
+  ">
+    ${card.task}
+  </div>
       </div>
     </div>
   `;
