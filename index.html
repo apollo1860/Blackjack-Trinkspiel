@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Blackjack Trinkspiel</title>
+  <style>
+    :root {
+      --felt-1: #0c6b35;
+      --felt-2: #0a5b2d;
+      --felt-3: #084924;
+      --gold: #e4c46a;
+      --cream: #fffdf7;
+      --red: #c62828;
+      --black: #111;
+      --shadow: rgba(0,0,0,0.28);
+      --glass: rgba(255,255,255,0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, transparent 35%),
+        repeating-radial-gradient(circle at center, rgba(255,255,255,0.03) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, var(--felt-1), var(--felt-2) 55%, var(--felt-3));
+      color: #fff;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 8px;
+      border: 2px solid rgba(228,196,106,0.45);
+      border-radius: 24px;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .table {
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: 1fr auto 1fr;
+      gap: 6px;
+      padding: 10px 10px 14px;
+      position: relative;
+    }
+
+    .player-area {
+      display: grid;
+      grid-template-columns: 78px 1fr 78px;
+      align-items: center;
+      gap: 6px;
+      min-height: 0;
+    }
+
+    .player-top {
+      transform: rotate(180deg);
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .score {
+      min-width: 64px;
+      padding: 12px 8px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.92);
+      color: #000;
+      font-weight: 900;
+      font-size: 28px;
+      line-height: 1;
+      text-align: center;
+      box-shadow: 0 8px 18px var(--shadow);
+      border: 2px solid rgba(0,0,0,0.12);
+    }
+
+    .status {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.9);
+      min-height: 14px;
+      text-align: center;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 10px;
+      min-width: 66px;
+      font-size: 15px;
+      font-weight: 900;
+      background: #111;
+      color: #fff;
+      box-shadow: 0 8px 18px var(--shadow);
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn[disabled] {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .btn.stop-active {
+      background: #5f5f5f;
+    }
+
+    .cards-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 132px;
+      overflow: hidden;
+    }
+
+    .cards {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      max-width: 100%;
+      padding: 6px;
+    }
+
+    .center-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .turn-indicator {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.95);
+      background: var(--glass);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 8px 14px;
+      border-radius: 999px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    .deck-area {
+      position: relative;
+      width: 120px;
+      height: 152px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .deck-shadow {
+      position: absolute;
+      bottom: 6px;
+      width: 95px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.3);
+      filter: blur(10px);
+    }
+
+    .deck-stack {
+      position: absolute;
+      width: 96px;
+      height: 136px;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #071f5d, #103a9e);
+      border: 3px solid rgba(255,255,255,0.88);
+      box-shadow: 0 12px 24px var(--shadow);
+      transform: translateY(6px);
+    }
+
+    .deck-stack::before,
+    .deck-stack::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #0a2b7d, #184fc7);
+      border: 3px solid rgba(255,255,255,0.88);
+    }
+
+    .deck-stack::before {
+      transform: translate(-4px, -4px);
+      z-index: -2;
+      opacity: 0.9;
+    }
+
+    .deck-stack::after {
+      transform: translate(-8px, -8px);
+      z-index: -3;
+      opacity: 0.8;
+    }
+
+    .deck {
+      position: relative;
+      z-index: 5;
+      width: 96px;
+      height: 136px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255,255,255,0.12), transparent 34%),
+        linear-gradient(145deg, #0b2c79, #1b4eca);
+      color: white;
+      box-shadow: 0 14px 24px var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s ease, filter 0.2s ease, opacity 0.2s ease;
+      border: 3px solid rgba(255,255,255,0.9);
+      overflow: hidden;
+    }
+
+    .deck:active {
+      transform: scale(0.96);
+    }
+
+    .deck[disabled] {
+      opacity: 0.5;
+      cursor: default;
+      filter: grayscale(0.25);
+    }
+
+    .deck-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-weight: 900;
+    }
+
+    .deck-icon {
+      font-size: 34px;
+      line-height: 1;
+    }
+
+    .deck-label {
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .secondary-btn {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(5px);
+    }
+
+    .card-slot {
+      width: 82px;
+      height: 116px;
+      flex: 0 0 auto;
+      perspective: 1000px;
+      position: relative;
+    }
+
+    .playing-card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(.2,.75,.2,1);
+      cursor: default;
+    }
+
+    .playing-card.flipped {
+      transform: rotateY(180deg);
+      cursor: pointer;
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      backface-visibility: hidden;
+      overflow: hidden;
+      box-shadow: 0 10px 18px var(--shadow);
+    }
+
+    .card-front {
+      background: var(--cream);
+      border: 2px solid rgba(0,0,0,0.14);
+      color: var(--black);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 7px;
+    }
+
+    .card-back {
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.1), transparent 38%),
+        linear-gradient(145deg, #0b2c79, #1b4eca);
+      border: 2px solid rgba(255,255,255,0.9);
+      transform: rotateY(180deg);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 28px;
+    }
+
+    .rank-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      font-weight: 900;
+      font-size: 18px;
+      line-height: 0.95;
+    }
+
+    .rank-corner.bottom {
+      align-self: flex-end;
+      align-items: flex-end;
+      transform: rotate(180deg);
+    }
+
+    .suit-small {
+      font-size: 16px;
+    }
+
+    .pip-center {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      font-weight: 700;
+    }
+
+    .red {
+      color: var(--red);
+    }
+
+    .draw-in {
+      animation: drawIn 0.35s ease;
+    }
+
+    @keyframes drawIn {
+      0% {
+        transform: translateY(20px) scale(0.88);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .pulse {
+      animation: pulse 0.8s ease infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.08), 0 12px 24px var(--shadow); }
+      100% { box-shadow: 0 0 0 8px rgba(255,255,255,0.02), 0 16px 28px var(--shadow); }
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(92vw, 430px);
+      background: linear-gradient(180deg, rgba(18,18,18,0.96), rgba(28,28,28,0.96));
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 22px;
+      box-shadow: 0 18px 38px rgba(0,0,0,0.45);
+      padding: 18px 16px 16px;
+      text-align: center;
+    }
+
+    .modal h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+    }
+
+    .modal p {
+      margin: 8px 0;
+      line-height: 1.35;
+    }
+
+    .task-box {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 14px 12px;
+      font-size: 20px;
+      font-weight: 800;
+      min-height: 80px;
+      display: grid;
+      place-items: center;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .winner {
+      color: #8ef8a7;
+      font-weight: 900;
+    }
+
+    .loser {
+      color: #ff9e9e;
+      font-weight: 900;
+    }
+
+    @media (max-width: 390px) {
+      .player-area {
+        grid-template-columns: 72px 1fr 72px;
+      }
+
+      .card-slot {
+        width: 74px;
+        height: 106px;
+      }
+
+      .deck-area {
+        width: 108px;
+        height: 144px;
+      }
+
+      .deck, .deck-stack {
+        width: 88px;
+        height: 128px;
+      }
+
+      .score {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="table">
+    <section class="player-area player-top" aria-label="Spieler 1 Bereich">
+      <div class="side">
+        <div class="score" id="score1">0</div>
+        <div class="status" id="status1">bereit</div>
+      </div>
+
+      <div class="cards-wrap">
+        <div class="cards" id="cards1"></div>
+      </div>
+
+      <div class="side">
+        <button class="btn" id="stop1">STOP</button>
+      </div>
+    </section>
+
+    <section class="center-zone">
+      <div class="turn-indicator" id="turnIndicator">Spieler 1 ist dran</div>
+
+      <div class="deck-area">
+        <div class="deck-shadow"></div>
+        <div class="deck-stack" aria-hidden="true"></div>
+        <button class="deck pulse" id="deckBtn" aria-label="Karte ziehen">
+          <div class="deck-inner">
+            <div class="deck-icon">🂠</div>
+            <div class="deck-label">Ziehen</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="controls">
+        <button class="btn secondary-btn" id="newRoundBtn" style="display:none;">Neue Runde</button>
+      </div>
+    </section>
+
+    <section class="player-area" aria-label="Spieler 2 Bereich">
+      <div class="side">
+        <button class="btn" id="stop2">STOP</button>
+      </div>
+
+      <div class="cards-wrap">
+        <div class="cards" id="cards2"></div>
+      </div>
+
+      <div class="side">
+        <div class="score" id="score2">0</div>
+        <div class="status" id="status2">bereit</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modalTitle">Runde vorbei</h2>
+      <p id="modalSummary"></p>
+      <div class="task-box" id="taskBox">Tippe auf eine Verlierer-Karte.</div>
+      <p class="hint" id="hintText">Jede Verlierer-Karte darf einmal aufgedeckt werden und zeigt dann eine Aufgabe.</p>
+      <div class="modal-actions">
+        <button class="btn" id="closeOverlayBtn">Weiter</button>
+        <button class="btn secondary-btn" id="overlayNewRoundBtn" style="display:none;">Neue Runde</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TASKS = [
+      "Trinke 2 Schlücke 🍺",
+      "Trinke 1 Shot 🥃",
+      "Gib 2 Schlücke weiter 👉",
+      "Alle trinken 1 Schluck 🍻",
+      "Du trinkst 3 Schlücke 😵",
+      "Wähle jemanden, der 2 Schlücke trinkt 😈",
+      "Tausche dein Getränk für 1 Runde 🔄",
+      "Links und rechts von dir trinken je 1 Schluck ↔️",
+      "Erzähle eine peinliche Story oder trinke 2 Schlücke 😅",
+      "Der Gewinner verteilt 3 Schlücke 👑"
+    ];
+
+    const SUITS = [
+      { symbol: "♠", color: "black" },
+      { symbol: "♥", color: "red" },
+      { symbol: "♦", color: "red" },
+      { symbol: "♣", color: "black" }
+    ];
+
+    const RANKS = [
+      { rank: "A", value: 11 },
+      { rank: "2", value: 2 },
+      { rank: "3", value: 3 },
+      { rank: "4", value: 4 },
+      { rank: "5", value: 5 },
+      { rank: "6", value: 6 },
+      { rank: "7", value: 7 },
+      { rank: "8", value: 8 },
+      { rank: "9", value: 9 },
+      { rank: "10", value: 10 },
+      { rank: "J", value: 10 },
+      { rank: "Q", value: 10 },
+      { rank: "K", value: 10 }
+    ];
+
+    const state = {
+      deck: [],
+      hands: { 1: [], 2: [] },
+      stopped: { 1: false, 2: false },
+      currentPlayer: 1,
+      roundEnded: false,
+      loser: null,
+      winner: null,
+      tasksRevealed: 0
+    };
+
+    const cards1El = document.getElementById("cards1");
+    const cards2El = document.getElementById("cards2");
+    const score1El = document.getElementById("score1");
+    const score2El = document.getElementById("score2");
+    const status1El = document.getElementById("status1");
+    const status2El = document.getElementById("status2");
+    const turnIndicatorEl = document.getElementById("turnIndicator");
+    const deckBtn = document.getElementById("deckBtn");
+    const stop1Btn = document.getElementById("stop1");
+    const stop2Btn = document.getElementById("stop2");
+    const newRoundBtn = document.getElementById("newRoundBtn");
+    const overlay = document.getElementById("overlay");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalSummary = document.getElementById("modalSummary");
+    const taskBox = document.getElementById("taskBox");
+    const hintText = document.getElementById("hintText");
+    const closeOverlayBtn = document.getElementById("closeOverlayBtn");
+    const overlayNewRoundBtn = document.getElementById("overlayNewRoundBtn");
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function createDeck() {
+      const deck = [];
+      for (const suit of SUITS) {
+        for (const rank of RANKS) {
+          deck.push({
+            id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+            rank: rank.rank,
+            value: rank.value,
+            suit: suit.symbol,
+            color: suit.color,
+            task: TASKS[Math.floor(Math.random() * TASKS.length)],
+            revealed: false
+          });
+        }
+      }
+      return shuffle(deck);
+    }
+
+    function calculateScore(hand) {
+      let total = hand.reduce((sum, card) => sum + card.value, 0);
+      let aces = hand.filter(card => card.rank === "A").length;
+
+      while (total > 21 && aces > 0) {
+        total -= 10;
+        aces--;
+      }
+      return total;
+    }
+
+    function getScore(player) {
+      return calculateScore(state.hands[player]);
+    }
+
+    function updateScores() {
+      score1El.textContent = getScore(1);
+      score2El.textContent = getScore(2);
+    }
+
+    function updateStatuses() {
+      status1El.textContent = state.stopped[1] ? "stopp" : "zieht";
+      status2El.textContent = state.stopped[2] ? "stopp" : "zieht";
+
+      stop1Btn.classList.toggle("stop-active", state.stopped[1]);
+      stop2Btn.classList.toggle("stop-active", state.stopped[2]);
+    }
+
+    function renderTurn() {
+      if (state.roundEnded) {
+        turnIndicatorEl.textContent = "Runde beendet";
+        deckBtn.disabled = true;
+        deckBtn.classList.remove("pulse");
+        return;
+      }
+
+      const p = state.currentPlayer;
+      turnIndicatorEl.textContent = `Spieler ${p} ist dran`;
+
+      stop1Btn.disabled = state.stopped[1] || state.currentPlayer !== 1;
+      stop2Btn.disabled = state.stopped[2] || state.currentPlayer !== 2;
+      deckBtn.disabled = false;
+      deckBtn.classList.add("pulse");
+    }
+
+    function makeCardHTML(card) {
+      const colorClass = card.color === "red" ? "red" : "";
+      return `
+        <div class="playing-card">
+          <div class="card-face card-front ${colorClass}">
+            <div class="rank-corner">
+              <span>${card.rank}</span>
+              <span class="suit-small">${card.suit}</span>
+            </div>
+            <div class="pip-center">${card.rank === "J" ? "🤴" : card.rank === "Q" ? "👸" : card.rank === "K" ? "👑" : card.rank === "A" ? card.suit : card.suit}</div>
+            <div class="rank-corner bottom">
+              <span>${card.rank}</span>
+              <span class="suit-small">${card.suit}</span>
+            </div>
+          </div>
+          <div class="card-face card-back">🂠</div>
+        </div>
+      `;
+    }
+
+    function addCardToBoard(player, card) {
+      const slot = document.createElement("div");
+      slot.className = "card-slot draw-in";
+      slot.dataset.cardId = card.id;
+      slot.innerHTML = makeCardHTML(card);
+      (player === 1 ? cards1El : cards2El).appendChild(slot);
+    }
+
+    function getNextAvailablePlayer() {
+      if (!state.stopped[1] && !state.stopped[2]) {
+        return state.currentPlayer === 1 ? 2 : 1;
+      }
+      if (!state.stopped[1]) return 1;
+      if (!state.stopped[2]) return 2;
+      return null;
+    }
+
+    function drawCard() {
+      if (state.roundEnded) return;
+
+      const player = state.currentPlayer;
+      if (state.stopped[player]) {
+        const next = getNextAvailablePlayer();
+        if (next === null) {
+          endRound();
+          return;
+        }
+        state.currentPlayer = next;
+        renderTurn();
+        return;
+      }
+
+      if (state.deck.length === 0) {
+        state.deck = createDeck();
+      }
+
+      const card = state.deck.pop();
+      state.hands[player].push(card);
+      addCardToBoard(player, card);
+      updateScores();
+
+      const score = getScore(player);
+      if (score >= 21) {
+        state.stopped[player] = true;
+      }
+
+      updateStatuses();
+
+      if (shouldEndRound()) {
+        endRound();
+        return;
+      }
+
+      const nextPlayer = getNextAvailablePlayer();
+      if (nextPlayer === null) {
+        endRound();
+        return;
+      }
+
+      state.currentPlayer = nextPlayer;
+      renderTurn();
+    }
+
+    function stopPlayer(player) {
+      if (state.roundEnded) return;
+      if (state.currentPlayer !== player) return;
+      if (state.stopped[player]) return;
+
+      state.stopped[player] = true;
+      updateStatuses();
+
+      if (shouldEndRound()) {
+        endRound();
+        return;
+      }
+
+      const nextPlayer = getNextAvailablePlayer();
+      if (nextPlayer === null) {
+        endRound();
+        return;
+      }
+
+      state.currentPlayer = nextPlayer;
+      renderTurn();
+    }
+
+    function shouldEndRound() {
+      const s1 = getScore(1);
+      const s2 = getScore(2);
+
+      if (s1 >= 21 || s2 >= 21) return true;
+      if (state.stopped[1] && state.stopped[2]) return true;
+      return false;
+    }
+
+    function determineResult() {
+      const s1 = getScore(1);
+      const s2 = getScore(2);
+
+      const bust1 = s1 > 21;
+      const bust2 = s2 > 21;
+
+      if (bust1 && bust2) {
+        if (s1 === s2) return { winner: null, loser: null, draw: true };
+        return s1 > s2 ? { winner: 2, loser: 1, draw: false } : { winner: 1, loser: 2, draw: false };
+      }
+
+      if (bust1) return { winner: 2, loser: 1, draw: false };
+      if (bust2) return { winner: 1, loser: 2, draw: false };
+
+      if (s1 === s2) return { winner: null, loser: null, draw: true };
+
+      return s1 > s2 ? { winner: 1, loser: 2, draw: false } : { winner: 2, loser: 1, draw: false };
+    }
+
+    function endRound() {
+      if (state.roundEnded) return;
+      state.roundEnded = true;
+
+      const result = determineResult();
+      state.winner = result.winner;
+      state.loser = result.loser;
+
+      updateScores();
+      updateStatuses();
+      renderTurn();
+
+      stop1Btn.disabled = true;
+      stop2Btn.disabled = true;
+      newRoundBtn.style.display = "inline-block";
+
+      if (result.draw) {
+        modalTitle.textContent = "Unentschieden";
+        modalSummary.innerHTML = `Beide haben gleich abgeschlossen. Spieler 1: <strong>${getScore(1)}</strong> | Spieler 2: <strong>${getScore(2)}</strong>`;
+        taskBox.textContent = "Keine Strafkarten in dieser Runde.";
+        hintText.textContent = "Startet einfach eine neue Runde.";
+        overlayNewRoundBtn.style.display = "inline-block";
+        showOverlay();
+        return;
+      }
+
+      modalTitle.textContent = "Runde vorbei";
+      modalSummary.innerHTML = `<span class="winner">Spieler ${result.winner} gewinnt</span> – <span class="loser">Spieler ${result.loser} verliert</span><br>Spieler 1: <strong>${getScore(1)}</strong> | Spieler 2: <strong>${getScore(2)}</strong>`;
+      taskBox.textContent = `Spieler ${result.loser} muss seine Karten antippen.`;
+      hintText.textContent = "Jede aufgedeckte Karte zeigt genau eine Trinkaufgabe.";
+      overlayNewRoundBtn.style.display = "none";
+
+      enableLoserCards();
+      showOverlay();
+    }
+
+    function enableLoserCards() {
+      if (!state.loser) return;
+
+      const container = state.loser === 1 ? cards1El : cards2El;
+      const slots = Array.from(container.querySelectorAll(".card-slot"));
+
+      slots.forEach(slot => {
+        const cardId = slot.dataset.cardId;
+        const card = state.hands[state.loser].find(c => c.id === cardId);
+        if (!card) return;
+
+        const playingCard = slot.querySelector(".playing-card");
+        if (!playingCard) return;
+
+        slot.style.cursor = "pointer";
+
+        slot.addEventListener("click", () => {
+          if (card.revealed) return;
+          card.revealed = true;
+          playingCard.classList.add("flipped");
+          state.tasksRevealed++;
+          taskBox.textContent = card.task;
+
+          const totalLoserCards = state.hands[state.loser].length;
+          if (state.tasksRevealed >= totalLoserCards) {
+            hintText.textContent = "Alle Strafkarten wurden aufgedeckt. Ihr könnt eine neue Runde starten.";
+            overlayNewRoundBtn.style.display = "inline-block";
+          }
+        });
+      });
+    }
+
+    function showOverlay() {
+      overlay.classList.add("show");
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove("show");
+    }
+
+    function resetRound() {
+      state.deck = createDeck();
+      state.hands = { 1: [], 2: [] };
+      state.stopped = { 1: false, 2: false };
+      state.currentPlayer = 1;
+      state.roundEnded = false;
+      state.loser = null;
+      state.winner = null;
+      state.tasksRevealed = 0;
+
+      cards1El.innerHTML = "";
+      cards2El.innerHTML = "";
+      newRoundBtn.style.display = "none";
+      overlayNewRoundBtn.style.display = "none";
+      taskBox.textContent = "Tippe auf eine Verlierer-Karte.";
+      hintText.textContent = "Jede Verlierer-Karte darf einmal aufgedeckt werden und zeigt dann eine Aufgabe.";
+
+      updateScores();
+      updateStatuses();
+      renderTurn();
+      hideOverlay();
+    }
+
+    deckBtn.addEventListener("click", drawCard);
+    stop1Btn.addEventListener("click", () => stopPlayer(1));
+    stop2Btn.addEventListener("click", () => stopPlayer(2));
+    newRoundBtn.addEventListener("click", resetRound);
+    overlayNewRoundBtn.addEventListener("click", resetRound);
+    closeOverlayBtn.addEventListener("click", hideOverlay);
+
+    resetRound();
+  </script>
+</body>
+</html>
