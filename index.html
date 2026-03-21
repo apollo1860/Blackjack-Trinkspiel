@@ -133,15 +133,23 @@
       overflow: hidden;
     }
 
-    .cards {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: nowrap;
-      max-width: 100%;
-      padding: 6px;
-    }
+  .cards {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  padding: 6px;
+
+  overflow-x: auto;              
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cards::-webkit-scrollbar {
+  display: none;
+}
 
     .center-zone {
       display: flex;
@@ -294,13 +302,15 @@
       backdrop-filter: blur(5px);
     }
 
-    .card-slot {
-      width: 82px;
-      height: 116px;
-      flex: 0 0 auto;
-      perspective: 1000px;
-      position: relative;
-    }
+  .card-slot {
+  width: 82px;
+  height: 116px;
+  flex: 0 0 auto;
+  perspective: 1000px;
+  position: relative;
+
+  scroll-snap-align: center;
+}
 
     .playing-card {
       width: 100%;
@@ -332,7 +342,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 7px;
+      padding: 5px;
     }
 
     .card-back {
@@ -352,7 +362,7 @@
       flex-direction: column;
       align-items: flex-start;
       font-weight: 900;
-      font-size: 18px;
+      font-size: 14px;
       line-height: 0.95;
     }
 
@@ -363,14 +373,14 @@
     }
 
     .suit-small {
-      font-size: 16px;
+      font-size: 12px;
     }
 
     .pip-center {
       flex: 1;
       display: grid;
       place-items: center;
-      font-size: 34px;
+      font-size: 26px;
       font-weight: 700;
     }
 
