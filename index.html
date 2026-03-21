@@ -503,7 +503,7 @@
 </head>
 <body>
   <div class="table">
-    <section class="player-area player-top" aria-label="Spieler 1 Bereich">
+    <section class="player-area player-top" id="player1Area" aria-label="Spieler 1 Bereich">
       <div class="side">
         <div class="score" id="score1">0</div>
         <div class="status" id="status1">bereit</div>
@@ -537,7 +537,7 @@
       </div>
     </section>
 
-    <section class="player-area" aria-label="Spieler 2 Bereich">
+    <section class="player-area" id="player2Area" aria-label="Spieler 2 Bereich">
       <div class="side">
         <button class="btn" id="stop2">STOP</button>
       </div>
@@ -901,7 +901,6 @@
       overlayNewRoundBtn.style.display = "none";
 
       enableLoserCards();
-      showOverlay();
     }
 
     function enableLoserCards() {
