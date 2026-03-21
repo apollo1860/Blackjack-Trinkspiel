@@ -648,15 +648,25 @@
     }
 
     function calculateScore(hand) {
-      let total = hand.reduce((sum, card) => sum + card.value, 0);
-      let aces = hand.filter(card => card.rank === "A").length;
+  let total = 0;
+  let aces = 0;
 
-      while (total > 21 && aces > 0) {
-        total -= 10;
-        aces--;
-      }
-      return total;
+  for (let card of hand) {
+    if (card.rank === "A") {
+      aces++;
+      total += 11;
+    } else {
+      total += card.value;
     }
+  }
+
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+
+  return total;
+}
 
     function getScore(player) {
       return calculateScore(state.hands[player]);
@@ -693,24 +703,43 @@
     }
 
     function makeCardHTML(card) {
-      const colorClass = card.color === "red" ? "red" : "";
-      return `
-        <div class="playing-card">
-          <div class="card-face card-front ${colorClass}">
-            <div class="rank-corner">
-              <span>${card.rank}</span>
-              <span class="suit-small">${card.suit}</span>
-            </div>
-            <div class="pip-center">${card.rank === "J" ? "🤴" : card.rank === "Q" ? "👸" : card.rank === "K" ? "👑" : card.rank === "A" ? card.suit : card.suit}</div>
-            <div class="rank-corner bottom">
-              <span>${card.rank}</span>
-              <span class="suit-small">${card.suit}</span>
-            </div>
-          </div>
-          <div class="card-face card-back">🂠</div>
+  const colorClass = card.color === "red" ? "red" : "";
+  return `
+    <div class="playing-card">
+      <div class="card-face card-front ${colorClass}">
+        <div class="rank-corner">
+          <span>${card.rank}</span>
+          <span class="suit-small">${card.suit}</span>
         </div>
-      `;
-    }
+
+        <div class="pip-center">
+          ${card.rank === "J" ? "🤴" :
+            card.rank === "Q" ? "👸" :
+            card.rank === "K" ? "👑" :
+            card.suit}
+        </div>
+
+        <div class="rank-corner bottom">
+          <span>${card.rank}</span>
+          <span class="suit-small">${card.suit}</span>
+        </div>
+      </div>
+
+      <!-- 🔥 AUFGABE AUF RÜCKSEITE -->
+      <div class="card-face card-back">
+        <div style="
+          padding:10px;
+          font-size:14px;
+          text-align:center;
+          line-height:1.2;
+          font-weight:bold;
+        ">
+          ${card.task}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
     function addCardToBoard(player, card) {
       const slot = document.createElement("div");
@@ -864,36 +893,35 @@
     }
 
     function enableLoserCards() {
-      if (!state.loser) return;
+  if (!state.loser) return;
 
-      const container = state.loser === 1 ? cards1El : cards2El;
-      const slots = Array.from(container.querySelectorAll(".card-slot"));
+  const container = state.loser === 1 ? cards1El : cards2El;
+  const slots = Array.from(container.querySelectorAll(".card-slot"));
 
-      slots.forEach(slot => {
-        const cardId = slot.dataset.cardId;
-        const card = state.hands[state.loser].find(c => c.id === cardId);
-        if (!card) return;
+  slots.forEach(slot => {
+    const cardId = slot.dataset.cardId;
+    const card = state.hands[state.loser].find(c => c.id === cardId);
+    if (!card) return;
 
-        const playingCard = slot.querySelector(".playing-card");
-        if (!playingCard) return;
+    const playingCard = slot.querySelector(".playing-card");
 
-        slot.style.cursor = "pointer";
+    slot.style.cursor = "pointer";
 
-        slot.addEventListener("click", () => {
-          if (card.revealed) return;
-          card.revealed = true;
-          playingCard.classList.add("flipped");
-          state.tasksRevealed++;
-          taskBox.textContent = card.task;
+    slot.addEventListener("click", () => {
+      if (card.revealed) return;
 
-          const totalLoserCards = state.hands[state.loser].length;
-          if (state.tasksRevealed >= totalLoserCards) {
-            hintText.textContent = "Alle Strafkarten wurden aufgedeckt. Ihr könnt eine neue Runde starten.";
-            overlayNewRoundBtn.style.display = "inline-block";
-          }
-        });
-      });
-    }
+      card.revealed = true;
+      playingCard.classList.add("flipped");
+
+      state.tasksRevealed++;
+
+      const total = state.hands[state.loser].length;
+      if (state.tasksRevealed >= total) {
+        overlayNewRoundBtn.style.display = "inline-block";
+      }
+    });
+  });
+}
 
     function showOverlay() {
       overlay.classList.add("show");
