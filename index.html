@@ -23,6 +23,8 @@
     }
 
     html, body {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
       margin: 0;
       padding: 0;
       height: 100%;
@@ -365,6 +367,22 @@
       font-size: 28px;
     }
 
+    .task-text {
+      width: 100%;
+      height: 100%;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      line-height: 1.2;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      hyphens: manual;
+    }
+
     .rank-corner {
       display: flex;
       flex-direction: column;
@@ -585,80 +603,78 @@
 
   <script>
     const TASKS = [
-      "SAFE",
-      "SAFE",
       "Trinke 1 Schluck",
       "Trinke 1 Schluck",
       "Trinke 1 Schluck",
       "Trinke 1 Schluck",
       "Trinke 1 Schluck",
-      "Trinke 2 Schlücke",
-      "Trinke 2 Schlücke",
-      "Trinke 2 Schlücke",
-      "Trinke 2 Schlücke",
-      "Trinke 3 Schlücke",
-      "Trinke 3 Schlücke",
-      "Trinke 3 Schlücke",
-      "Trinke 4 Schlücke",
-      "Trinke 4 Schlücke",
-      "Trinke 5 Schlücke",
-      "Entscheide Schluckzahl",
-      "Würfel deine Schlücke",
-      "Imitiere 1 Meme",
-      "Nenne 1 Insider",
+      "Trinke 2 Schlü­cke",
+      "Trinke 2 Schlü­cke",
+      "Trinke 2 Schlü­cke",
+      "Trinke 2 Schlü­cke",
+      "Trinke 3 Schlü­cke",
+      "Trinke 3 Schlü­cke",
+      "Trinke 3 Schlü­cke",
+      "Trinke 4 Schlü­cke",
+      "Trinke 4 Schlü­cke",
+      "Trinke 5 Schlü­cke",
+      "Ent­schei­de Schluck­zahl",
+      "Würfel deine Schlü­cke",
+      "Imi­tie­re 1 Meme",
+      "Nenne 1 In­sider",
       "Fli Fla Flu",
-      "Tier-Imitation",
-      "Mensch-Imitation",
-      "Songwunsch",
+      "Tier-Imi­ta­tion",
+      "Mensch-Imi­ta­tion",
+      "Song­wunsch",
       "Film in 1 Wort",
       "Film in 2 Wörtern",
       "Lied in 1 Wort",
       "Lied in 2 Wörtern",
-      "Gegner bestimmt Schluckzahl",
-      "Wasserfall",
+      "Geg­ner be­stimmt Schluck­zahl",
+      "Wasser­fall",
       "Trinke so viel wie dein Gegner",
       "3 Reime auf ein Wort",
       "4 Reime auf ein Wort",
       "5 Reime auf ein Wort",
       "6 Reime auf ein Wort",
       "Kiss, Marry, Kill",
-      "Würdest du eher...",
+      "Wür­dest du eher...",
       "Hot Take",
       "Letztes Foto",
       "Letztes Video",
-      "Gruppenfoto",
-      "Chatsuche",
-      "Zuletzt gelöscht Ordner",
-      "Fotosuche",
-      "Popular Opinion",
-      "Unpopular Opinion",
-      "Letzte gesendete E-Mail",
-      "Letzte erhaltene E-Mail",
+      "Gruppen­foto",
+      "Chat­suche",
+      "Zuletzt ge­löscht Ordner",
+      "Foto­suche",
+      "Popu­lar Opi­nion",
+      "Un­popu­lar Opi­nion",
+      "Letzte ge­sen­de­te E-Mail",
+      "Letzte er­hal­te­ne E-Mail",
       "Letzte Spam E-Mail",
-      "Letzter gesendeter Text",
-      "Zeige dein letztes gesendetes Foto",
-      "Letzter erhaltener Text",
-      "Bekomme eine Regel",
-      "Bekomme eine Regel",
-      "Bekomme eine Regel",
-      "Bekomme eine Regel",
-      "Bekomme eine Regel",
-      "Trinke für jedes Kleidungsstück",
-      "Trinke deine Fluganzahl d. J.",
-      "Trinke deine Urlaubsanzahl d. J.",
-      "Trinke deine Krankheitstage d. J.",
-      "Trinke deine Geschwisteranzahl",
-      "Trinke die aktuelle Monatszahl",
-      "Kompliment für Gegner",
+      "Letzter ge­sen­de­ter Text",
+      "Zeige dein letztes ge­sen­de­tes Foto",
+      "Letzter er­hal­te­ner Text",
+      "Be­kom­me eine Regel",
+      "Be­kom­me eine Regel",
+      "Be­kom­me eine Regel",
+      "Be­kom­me eine Regel",
+      "Be­kom­me eine Regel",
+      "Trinke für jedes Klei­dungs­stück",
+      "Trinke deine Flug­anzahl d. J.",
+      "Trinke deine Urlaubs­anzahl d. J.",
+      "Trinke deine Krank­heits­ta­ge d. J.",
+      "Trinke deine Ge­schwis­ter­an­zahl",
+      "Trinke die aktu­elle Monats­zahl",
+      "Kom­pli­ment für Gegner",
       "Wer bin ich (10)",
-      "Versende 1 Snap",
+      "Ver­sen­de 1 Snap",
       "1 Min reden ohne Äh",
-      "Emoji per WhatsApp",
-      "TikTok Timeline (5)",
-      "TikTok Timeline (4)",
-      "TikTok Timeline (3)",
-      "TikTok Timeline (2)",
-      "Wahrheit oder Pflicht"
+      "Emoji per Whats­App",
+      "TikTok Time­line (5)",
+      "TikTok Time­line (4)",
+      "TikTok Time­line (3)",
+      "TikTok Time­line (2)",
+      "Wahr­heit oder Pflicht"
     ];
 
     const SUITS = [
@@ -824,26 +840,35 @@
         </div>
       </div>
 
-      <!-- 🔥 AUFGABE AUF RÜCKSEITE -->
+      <!-- Aufgabe auf der Rückseite -->
       <div class="card-face card-back">
-  <div style="
-    padding:8px;
-    font-size:11px;              /* 👈 kleiner */
-    text-align:center;
-    line-height:1.3;
-    font-weight:bold;
-
-    display:flex;                /* 👇 sorgt für perfekte Zentrierung */
-    align-items:center;
-    justify-content:center;
-    height:100%;
-  ">
-    ${card.task}
-  </div>
+        <div class="task-text">${card.task}</div>
       </div>
     </div>
   `;
 }
+
+    const TASK_FONT_MAX = 13;
+    const TASK_FONT_MIN = 9;
+
+    // Verkleinert die Aufgabenschrift, bis der Text komplett auf die Karte passt
+    function fitTaskText(slot) {
+      const el = slot.querySelector(".task-text");
+      if (!el) return;
+      // Ohne Notumbruch messen, damit Wörter nur an Trennstellen (Soft-Hyphen) umbrechen
+      el.style.overflowWrap = "normal";
+      let size = TASK_FONT_MAX;
+      el.style.fontSize = size + "px";
+      while (size > TASK_FONT_MIN && (el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight)) {
+        size -= 0.5;
+        el.style.fontSize = size + "px";
+      }
+      el.style.overflowWrap = "";
+    }
+
+    function fitAllTaskTexts() {
+      document.querySelectorAll(".card-slot").forEach(fitTaskText);
+    }
 
     function addCardToBoard(player, card) {
       const slot = document.createElement("div");
@@ -851,6 +876,7 @@
       slot.dataset.cardId = card.id;
       slot.innerHTML = makeCardHTML(card);
       (player === 1 ? cards1El : cards2El).appendChild(slot);
+      fitTaskText(slot);
     }
 
     function getNextAvailablePlayer() {
@@ -1096,6 +1122,8 @@
     closeOverlayBtn.addEventListener("click", hideOverlay);
     cards1El.addEventListener("click", event => pickPenaltyCard(1, event));
     cards2El.addEventListener("click", event => pickPenaltyCard(2, event));
+
+    window.addEventListener("resize", fitAllTaskTexts);
 
     resetRound();
   </script>
