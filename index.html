@@ -567,11 +567,10 @@
     <div class="modal">
       <h2 id="modalTitle">Runde vorbei</h2>
       <p id="modalSummary"></p>
-      <div class="task-box" id="taskBox">Tippe auf eine Verlierer-Karte.</div>
-      <p class="hint" id="hintText">Jede Verlierer-Karte darf einmal aufgedeckt werden und zeigt dann eine Aufgabe.</p>
+      <div class="task-box" id="taskBox"></div>
+      <p class="hint" id="hintText"></p>
       <div class="modal-actions">
         <button class="btn" id="closeOverlayBtn">Weiter</button>
-        <button class="btn secondary-btn" id="overlayNewRoundBtn" style="display:none;">Neue Runde</button>
       </div>
     </div>
   </div>
@@ -610,9 +609,6 @@
       "Gegner bestimmt Schluckzahl",
       "Wasserfall",
       "Trinke so viel wie dein Gegner",
-      "Sage ... in 4 Sprachen",
-      "Sage ... in 3 Sprachen",
-      "Sage ... in 2 Sprachen",
       "3 Reime auf ein Wort",
       "4 Reime auf ein Wort",
       "5 Reime auf ein Wort",
@@ -633,9 +629,7 @@
       "Letzte Spam E-Mail",
       "Letzter gesendeter Text",
       "Zeige dein letztes gesendetes Foto",
-      "Letzter erhaltenener Text",
-      "Gegner spielt A bis Z",
-      "Gegner spielt A bis Z",
+      "Letzter erhaltener Text",
       "Bekomme eine Regel",
       "Bekomme eine Regel",
       "Bekomme eine Regel",
@@ -656,23 +650,6 @@
       "TikTok Timeline (4)",
       "TikTok Timeline (3)",
       "TikTok Timeline (2)",
-      "Gegner nennt 5 ...",
-      "Gegner nennt 5 ...",
-      "Gegner nennt 5 ...",
-      "Gegner nennt 4 ...",
-      "Gegner nennt 4 ...",
-      "Gegner nennt 4 ...",
-      "Gegner nennt 3 ...",
-      "Gegner nennt 3 ...",
-      "Gegner nennt 3 ...",
-      "Nenne 5 ...",
-      "Nenne 5 ...",
-      "Nenne 5 ...",
-      "Nenne 4 ...",
-      "Nenne 4 ...",
-      "Nenne 4 ...",
-      "Nenne 3 ...",
-      "Nenne 3 ...",
       "Wahrheit oder Pflicht"
     ];
 
@@ -704,11 +681,16 @@
       hands: { 1: [], 2: [] },
       stopped: { 1: false, 2: false },
       currentPlayer: 1,
+      nextStarter: 1,
       roundEnded: false,
       loser: null,
       winner: null,
-      tasksRevealed: 0
+      penaltyPlayers: [],
+      picked: { 1: false, 2: false },
+      lastDrawAt: 0
     };
+
+    const DRAW_COOLDOWN_MS = 400;
 
     const cards1El = document.getElementById("cards1");
     const cards2El = document.getElementById("cards2");
@@ -727,7 +709,8 @@
     const taskBox = document.getElementById("taskBox");
     const hintText = document.getElementById("hintText");
     const closeOverlayBtn = document.getElementById("closeOverlayBtn");
-    const overlayNewRoundBtn = document.getElementById("overlayNewRoundBtn");
+    const player1AreaEl = document.getElementById("player1Area");
+    const player2AreaEl = document.getElementById("player2Area");
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -874,6 +857,11 @@
     function drawCard() {
       if (state.roundEnded) return;
 
+      // Schutz vor Doppeltipp: sonst zieht der zweite Tipp für den Gegner
+      const now = Date.now();
+      if (now - state.lastDrawAt < DRAW_COOLDOWN_MS) return;
+      state.lastDrawAt = now;
+
       const player = state.currentPlayer;
       if (state.stopped[player]) {
         const next = getNextAvailablePlayer();
@@ -895,8 +883,8 @@
       addCardToBoard(player, card);
       updateScores();
 
-      const score = getScore(player);
-      if (score >= 21) {
+      // Bei 21 bleibt man automatisch stehen, der Gegner darf weiterziehen
+      if (getScore(player) === 21) {
         state.stopped[player] = true;
       }
 
@@ -944,7 +932,8 @@
       const s1 = getScore(1);
       const s2 = getScore(2);
 
-      if (s1 >= 21 || s2 >= 21) return true;
+      // Überkauft = sofort verloren, wie beim normalen Blackjack
+      if (s1 > 21 || s2 > 21) return true;
       if (state.stopped[1] && state.stopped[2]) return true;
       return false;
     }
@@ -976,6 +965,8 @@
       const result = determineResult();
       state.winner = result.winner;
       state.loser = result.loser;
+      // Unentschieden: beide decken eine Karte auf, sonst nur der Verlierer
+      state.penaltyPlayers = result.draw ? [1, 2] : [result.loser];
 
       updateScores();
       updateStatuses();
@@ -983,57 +974,71 @@
 
       stop1Btn.disabled = true;
       stop2Btn.disabled = true;
-      newRoundBtn.style.display = "inline-block";
+
+      player1AreaEl.classList.toggle("winner-highlight", result.winner === 1);
+      player1AreaEl.classList.toggle("loser-highlight", result.loser === 1);
+      player2AreaEl.classList.toggle("winner-highlight", result.winner === 2);
+      player2AreaEl.classList.toggle("loser-highlight", result.loser === 2);
+
+      const scores = `Spieler 1: <strong>${getScore(1)}</strong> | Spieler 2: <strong>${getScore(2)}</strong>`;
+
+      // Wer ohne Karte in die Strafe geht, bekommt eine verdeckte Strafkarte
+      for (const player of state.penaltyPlayers) {
+        if (state.hands[player].length === 0) {
+          if (state.deck.length === 0) state.deck = createDeck();
+          const card = state.deck.pop();
+          state.hands[player].push(card);
+          addCardToBoard(player, card);
+        }
+      }
 
       if (result.draw) {
         modalTitle.textContent = "Unentschieden";
-        modalSummary.innerHTML = `Beide haben gleich abgeschlossen. Spieler 1: <strong>${getScore(1)}</strong> | Spieler 2: <strong>${getScore(2)}</strong>`;
-        taskBox.textContent = "Keine Strafkarten in dieser Runde.";
-        hintText.textContent = "Startet einfach eine neue Runde.";
-        overlayNewRoundBtn.style.display = "inline-block";
-        showOverlay();
-        return;
+        modalSummary.innerHTML = `Beide haben gleich abgeschlossen.<br>${scores}`;
+        taskBox.textContent = "Jeder wählt eine Karte des Gegners.";
+        hintText.textContent = "Beide Strafen werden ausgeführt.";
+        turnIndicatorEl.textContent = "Gegenseitig 1 Karte wählen";
+      } else {
+        modalTitle.textContent = "Runde vorbei";
+        modalSummary.innerHTML = `<span class="winner">Spieler ${result.winner} gewinnt</span> – <span class="loser">Spieler ${result.loser} verliert</span><br>${scores}`;
+        taskBox.textContent = `Spieler ${result.winner} wählt eine Karte von Spieler ${result.loser}.`;
+        hintText.textContent = "Nur die gewählte Karte wird aufgedeckt – deren Aufgabe gilt.";
+        turnIndicatorEl.textContent = `Spieler ${result.winner} wählt eine Karte`;
       }
 
-      modalTitle.textContent = "Runde vorbei";
-      modalSummary.innerHTML = `<span class="winner">Spieler ${result.winner} gewinnt</span> – <span class="loser">Spieler ${result.loser} verliert</span><br>Spieler 1: <strong>${getScore(1)}</strong> | Spieler 2: <strong>${getScore(2)}</strong>`;
-      taskBox.textContent = `Spieler ${result.loser} muss seine Karten antippen.`;
-      hintText.textContent = "Jede aufgedeckte Karte zeigt genau eine Trinkaufgabe.";
-      overlayNewRoundBtn.style.display = "none";
-
-      enableLoserCards();
+      updatePickableCards();
+      showOverlay();
     }
 
-    function enableLoserCards() {
-  if (!state.loser) return;
+    function updatePickableCards() {
+      for (const player of [1, 2]) {
+        const canPick = state.roundEnded && state.penaltyPlayers.includes(player) && !state.picked[player];
+        const container = player === 1 ? cards1El : cards2El;
+        container.querySelectorAll(".card-slot").forEach(slot => {
+          slot.style.cursor = canPick ? "pointer" : "";
+        });
+      }
+    }
 
-  const container = state.loser === 1 ? cards1El : cards2El;
-  const slots = Array.from(container.querySelectorAll(".card-slot"));
+    function pickPenaltyCard(player, event) {
+      if (!state.roundEnded) return;
+      if (!state.penaltyPlayers.includes(player) || state.picked[player]) return;
 
-  slots.forEach(slot => {
-    const cardId = slot.dataset.cardId;
-    const card = state.hands[state.loser].find(c => c.id === cardId);
-    if (!card) return;
-
-    const playingCard = slot.querySelector(".playing-card");
-
-    slot.style.cursor = "pointer";
-
-    slot.addEventListener("click", () => {
-      if (card.revealed) return;
+      const slot = event.target.closest(".card-slot");
+      if (!slot) return;
+      const card = state.hands[player].find(c => c.id === slot.dataset.cardId);
+      if (!card) return;
 
       card.revealed = true;
-      playingCard.classList.add("flipped");
+      state.picked[player] = true;
+      slot.querySelector(".playing-card").classList.add("flipped");
+      updatePickableCards();
 
-      state.tasksRevealed++;
-
-      const total = state.hands[state.loser].length;
-      if (state.tasksRevealed >= total) {
-        overlayNewRoundBtn.style.display = "inline-block";
+      if (state.penaltyPlayers.every(p => state.picked[p])) {
+        turnIndicatorEl.textContent = "Strafe ausführen!";
+        newRoundBtn.style.display = "inline-block";
       }
-    });
-  });
-}
+    }
 
     function showOverlay() {
       overlay.classList.add("show");
@@ -1047,18 +1052,20 @@
       state.deck = createDeck();
       state.hands = { 1: [], 2: [] };
       state.stopped = { 1: false, 2: false };
-      state.currentPlayer = 1;
+      // Startspieler wechselt jede Runde
+      state.currentPlayer = state.nextStarter;
+      state.nextStarter = state.nextStarter === 1 ? 2 : 1;
       state.roundEnded = false;
       state.loser = null;
       state.winner = null;
-      state.tasksRevealed = 0;
+      state.penaltyPlayers = [];
+      state.picked = { 1: false, 2: false };
 
       cards1El.innerHTML = "";
       cards2El.innerHTML = "";
       newRoundBtn.style.display = "none";
-      overlayNewRoundBtn.style.display = "none";
-      taskBox.textContent = "Tippe auf eine Verlierer-Karte.";
-      hintText.textContent = "Jede Verlierer-Karte darf einmal aufgedeckt werden und zeigt dann eine Aufgabe.";
+      player1AreaEl.classList.remove("winner-highlight", "loser-highlight");
+      player2AreaEl.classList.remove("winner-highlight", "loser-highlight");
 
       updateScores();
       updateStatuses();
@@ -1070,8 +1077,9 @@
     stop1Btn.addEventListener("click", () => stopPlayer(1));
     stop2Btn.addEventListener("click", () => stopPlayer(2));
     newRoundBtn.addEventListener("click", resetRound);
-    overlayNewRoundBtn.addEventListener("click", resetRound);
     closeOverlayBtn.addEventListener("click", hideOverlay);
+    cards1El.addEventListener("click", event => pickPenaltyCard(1, event));
+    cards2El.addEventListener("click", event => pickPenaltyCard(2, event));
 
     resetRound();
   </script>
